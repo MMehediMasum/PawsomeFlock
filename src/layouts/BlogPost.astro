@@ -114,7 +114,7 @@ const authorEntry = author ? await getEntry('authors', author) : undefined;
 					{
 						heroImage && (
 							<div class="hero-image">
-								<Image width={1020} height={510} src={heroImage} alt="" />
+								<img src={heroImage} alt="" loading="lazy" width="1020" height="510" />
 							</div>
 						)
 					}
