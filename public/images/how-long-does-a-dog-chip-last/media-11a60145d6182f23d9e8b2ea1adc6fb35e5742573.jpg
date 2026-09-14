@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PetPlace</title>
+
+    <script>
+      (() => {
+        const detailMatch = window.location.pathname.match(/^\/pet-adoption\/pet\/([^/]+)\/([^/]+)\/?$/);
+        const isSearch = /^\/pet-adoption\/search\/?$/.test(window.location.pathname);
+        if (!detailMatch && !isSearch) return;
+        document.documentElement.classList.add(isSearch ? "adoption-search" : "adoption-detail");
+
+        const applicationStyles = document.createElement("link");
+        applicationStyles.rel = isSearch ? "stylesheet" : "preload";
+        if (!isSearch) applicationStyles.as = "style";
+        applicationStyles.href = "/assets/react-main.css";
+        applicationStyles.dataset.petplaceApplicationStyles = "preload";
+        applicationStyles.addEventListener("load", () => {
+          applicationStyles.dataset.loaded = "true";
+        }, { once: true });
+        document.head.appendChild(applicationStyles);
+
+        if (isSearch) {
+          const searchImagePreload = document.createElement("link");
+          searchImagePreload.rel = "preload";
+          searchImagePreload.as = "image";
+          searchImagePreload.href = "/images/adoption-search-dog-placeholder.webp";
+          searchImagePreload.fetchPriority = "high";
+          document.head.appendChild(searchImagePreload);
+        }
+
+        const hostname = window.location.hostname;
+        const apiBase = hostname === "www.petplace.com"
+          ? "https://api.petplace.com"
+          : hostname.includes("stg-reimagined.petplace.com")
+            ? "https://petplaceapi-stg.azure-api.net"
+            : "https://petplaceapi-dev.azure-api.net";
+        const searchParams = new URLSearchParams(window.location.search);
+        const csv = (key) => searchParams.get(key)?.split(",").map((value) => value.trim()).filter(Boolean);
+        const searchPayload = {
+          locationInformation: {
+            clientId: csv("filterShelter") ?? null,
+            zipPostal: searchParams.get("zipPostal")?.trim() ?? "",
+            milesRadius: searchParams.get("milesRadius")?.trim() || "10"
+          },
+          animalFilters: {
+            startIndex: 0,
+            filterAnimalType: searchParams.get("filterAnimalType")?.trim() || undefined,
+            filterBreed: csv("filterBreed"),
+            filterGender: csv("filterGender")?.length === 1 ? csv("filterGender")[0] : undefined,
+            filterAge: csv("filterAge"),
+            filterSize: csv("filterSize"),
+            filterShelter: csv("filterShelter")
+          }
+        };
+        const animalId = detailMatch ? decodeURIComponent(detailMatch[1]) : "";
+        const clientId = detailMatch ? decodeURIComponent(detailMatch[2]) : "";
+        const request = fetch(
+          isSearch
+            ? `${apiBase}/animal`
+            : `${apiBase}/animal/${encodeURIComponent(animalId)}/client/${encodeURIComponent(clientId)}`,
+          isSearch
+            ? {
+                method: "POST",
+                headers: { Accept: "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify(searchPayload)
+              }
+            : { headers: { Accept: "application/json" } }
+        ).then((response) => {
+          if (!response.ok) throw new Error(`Animal request failed with ${response.status}`);
+          return response.json();
+        });
+
+        if (isSearch) {
+          window.__petplaceAdoptionSearchKey = window.location.search;
+          window.__petplaceAdoptionSearchRequest = request.then((data) => Array.isArray(data.animal) ? data.animal : []);
+          window.__petplaceAdoptionSearchRequest.then((animals) => {
+            window.__petplaceAdoptionSearchData = animals;
+            const pet = animals[0];
+            if (!pet) return;
+
+            const updateCard = () => {
+              const card = document.getElementById("adoption-search-first-card");
+              const cardLink = document.getElementById("adoption-search-first-card-link");
+              const image = document.getElementById("adoption-search-lcp-image");
+              const name = document.getElementById("adoption-search-pet-name");
+              const details = document.getElementById("adoption-search-pet-details");
+              const location = document.getElementById("adoption-search-pet-location");
+              if (!card || !(cardLink instanceof HTMLAnchorElement) || !(image instanceof HTMLImageElement) || !name || !details || !location) return false;
+
+              cardLink.href = `/pet-adoption/pet/${encodeURIComponent(pet.animalId)}/${encodeURIComponent(pet.clientId)}`;
+              image.alt = `Photo of ${pet.Name || "pet"}`;
+              if (pet.coverImagePath) image.src = pet.coverImagePath;
+              name.textContent = (pet.Name || "Pet available for adoption").replace(/\s*\([^)]*\)\s*$/, "");
+              details.textContent = [pet.Gender, pet.Breed].filter(Boolean).join(" ");
+              location.textContent = [pet.City, pet.State].filter(Boolean).join(", ");
+              card.hidden = false;
+
+              const announceReady = () => {
+                if (!image.complete || window.__petplaceAdoptionSearchLcpReady) return;
+                window.requestAnimationFrame(() => {
+                  window.requestAnimationFrame(() => {
+                    window.__petplaceAdoptionSearchLcpReady = true;
+                    window.dispatchEvent(new Event("petplace:adoption-search-lcp-ready"));
+                  });
+                });
+              };
+              image.addEventListener("load", announceReady, { once: true });
+              announceReady();
+              return true;
+            };
+
+            if (!updateCard()) {
+              const observer = new MutationObserver(() => {
+                if (updateCard()) observer.disconnect();
+              });
+              observer.observe(document.documentElement, { childList: true, subtree: true });
+            }
+          }).catch(() => undefined);
+          return;
+        }
+
+        window.__petplaceAdoptionRequest = request;
+        request.then((data) => {
+          window.__petplaceAdoptionData = data;
+          const animal = Array.isArray(data.ppRequired) ? data.ppRequired[0] : undefined;
+          const imageUrl = Array.isArray(data.imageURL) ? data.imageURL[0] : undefined;
+          const updateImage = () => {
+            const image = document.getElementById("adoption-hero-image");
+            if (!(image instanceof HTMLImageElement)) return false;
+
+            image.alt = `Photo of ${animal?.["Pet Name"] || "pet"}`;
+            if (imageUrl) image.src = imageUrl;
+
+            const announceReady = () => {
+              if (!image.complete) return;
+              window.requestAnimationFrame(() => {
+                window.__petplaceAdoptionLcpReady = true;
+                window.dispatchEvent(new Event("petplace:adoption-lcp-ready"));
+              });
+            };
+
+            image.addEventListener("load", announceReady, { once: true });
+            announceReady();
+            return true;
+          };
+
+          if (!updateImage()) {
+            const observer = new MutationObserver(() => {
+              if (updateImage()) observer.disconnect();
+            });
+            observer.observe(document.documentElement, { childList: true, subtree: true });
+          }
+        }).catch(() => undefined);
+      })();
+    </script>
+
+    <!-- Default SVG -->
+    <link id="favicon" rel="icon" type="image/svg+xml">
+    <script defer src="/scripts/faviconLoader.js"></script>
+
+    <!-- PNG fallback -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+
+    <!-- Safari pinned tab -->
+    <link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#4A7fAE">
+
+    <!-- Apple -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+    <!-- Manifest -->
+    <link rel="manifest" href="/site.webmanifest">
+
+    <!-- Preconnect to critical origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.petplace.com" crossorigin>
+    <!-- Preconnect to Contentful CDN for images + API (eliminates TLS handshake delay) -->
+    <link rel="preconnect" href="https://images.ctfassets.net" crossorigin>
+    <link rel="preconnect" href="https://cdn.contentful.com" crossorigin>
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+
+    <!-- Keep the homepage hero parser-early without charging other routes for it. -->
+    <script>
+      if (window.location.pathname === "/") {
+        const heroBase = "https://images.ctfassets.net/vbp17n8ecxz8/5iExqhGAGxdd4V5DGmbuIa/0c23dc726bc7d0ab5788406440e8348b/6c3f1c62aff04aa288f2fdf1aafc7931cbc1ee9b.png";
+        const widths = [320, 640, 750, 1080, 1200];
+        const heroUrl = (width) => `${heroBase}?w=${width}&fit=fill&q=65&fm=avif`;
+        const preload = document.createElement("link");
+        preload.rel = "preload";
+        preload.as = "image";
+        preload.type = "image/avif";
+        preload.href = heroUrl(1200);
+        preload.imageSrcset = widths.map((width) => `${heroUrl(width)} ${width}w`).join(", ");
+        preload.imageSizes = "100vw";
+        preload.fetchPriority = "high";
+        preload.dataset.homeHeroPreloadRoot = "true";
+        document.head.appendChild(preload);
+      }
+    </script>
+
+    <!-- DNS prefetch for third-party scripts -->
+    <link rel="dns-prefetch" href="https://cmp.osano.com">
+    <link rel="dns-prefetch" href="https://core.spreedly.com">
+
+    <!-- Google Fonts with display=swap for non-blocking text rendering -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet"></noscript>
+
+    <!-- Osano CMP script loads after Consent Mode defaults are established below. -->
+    <!-- Spreedly iframe script is loaded on-demand in payment routes -->
+
+    <!-- Initialize dataLayer and Google Consent Mode v2 defaults before any GTM scripts -->
+    <script>
+      window.dataLayer=window.dataLayer||[];
+      window.gtag=function(){dataLayer.push(arguments);}
+      gtag('consent','default',{
+        ad_storage:'denied',
+        ad_user_data:'denied',
+        ad_personalization:'denied',
+        analytics_storage:'denied',
+        functionality_storage:'denied',
+        personalization_storage:'denied',
+        security_storage:'granted',
+        wait_for_update:500
+      });
+    </script>
+    <script>
+      (() => {
+        let osanoLoaded = false;
+        const loadOsano = () => {
+          if (osanoLoaded) return;
+          osanoLoaded = true;
+          const script = document.createElement("script");
+          script.src = "https://cmp.osano.com/AzZnQYUKjmniQ4Zwf/2f289149-798b-4633-8519-c5dbda7e3cf5/osano.js";
+          script.async = true;
+          document.head.appendChild(script);
+        };
+        const isAdoptionDetail = /^\/pet-adoption\/pet\/[^/]+\/[^/]+\/?$/.test(window.location.pathname);
+        const isAdoptionSearch = /^\/pet-adoption\/search\/?$/.test(window.location.pathname);
+
+        if (isAdoptionDetail) {
+          window.addEventListener(
+            "petplace:adoption-lcp-ready",
+            loadOsano,
+            { once: true }
+          );
+          window.setTimeout(loadOsano, 10000);
+        } else if (isAdoptionSearch) {
+          const interactionEvents = ["pointerdown", "keydown", "touchstart"];
+          const loadOnInteraction = () => {
+            interactionEvents.forEach((eventName) => {
+              window.removeEventListener(eventName, loadOnInteraction);
+            });
+            loadOsano();
+          };
+          interactionEvents.forEach((eventName) => {
+            window.addEventListener(eventName, loadOnInteraction, {
+              once: true,
+              passive: true
+            });
+          });
+          window.setTimeout(loadOsano, 12000);
+        } else {
+          loadOsano();
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="react-root" style="min-height: 100dvh; width: 100%">
+      <!-- Inline skeleton for immediate First Contentful Paint (FCP).
+           This renders before any JS loads, giving the browser content to paint.
+           React will replace this content when it mounts. -->
+      <style>body,html{margin:0;padding:0}*,:after,:before{box-sizing:border-box}.skeleton-header{height:64px;width:100%;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 20px}.skeleton-logo{width:120px;height:32px;background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px}.skeleton-hero{width:100%;height:500px;background:linear-gradient(135deg,#f8f9fa,#e9ecef);display:flex;align-items:center;justify-content:center}.skeleton-content{max-width:600px;padding:40px 20px}.skeleton-title{height:36px;width:80%;background:linear-gradient(90deg,#e0e0e0 25%,#d0d0d0 50%,#e0e0e0 75%);background-size:200% 100%;border-radius:8px;margin-bottom:16px}.skeleton-text,.skeleton-title{animation:shimmer 1.5s infinite}.skeleton-text{height:20px;width:60%;background:linear-gradient(90deg,#e8e8e8 25%,#d8d8d8 50%,#e8e8e8 75%);background-size:200% 100%;border-radius:4px}#adoption-shell,html.adoption-detail #default-shell,html.adoption-search #default-shell{display:none}html.adoption-detail #adoption-shell,html.adoption-search #adoption-shell{display:block}.adoption-search-only,html.adoption-search .adoption-detail-only{display:none}html.adoption-search .adoption-search-only{display:block}.adoption-fast-header{position:relative;z-index:40;background:#fff}.adoption-fast-nav{display:flex;min-height:64px;max-width:1280px;margin:0 auto;padding:0 20px;align-items:center;justify-content:space-between}.adoption-fast-nav-actions,.adoption-fast-nav-group{display:inline-flex;align-items:center;gap:8px}.adoption-fast-desktop-nav,.adoption-fast-report-link{display:none}.adoption-fast-icon-button{display:inline-flex;width:40px;height:40px;margin:0;padding:0;align-items:center;justify-content:center;border:0;background:transparent;color:#30415a;cursor:pointer}.adoption-fast-icon-button svg{display:block;width:28px;height:28px}.adoption-fast-logo{display:block;width:118px;height:23px}.adoption-fast-sign-in{display:inline-flex;height:40px;padding:0 18px;align-items:center;justify-content:center;border-radius:9999px;background:#ffa63b;color:#30415a;font:500 16px/1 DM Sans,sans-serif;text-decoration:none;white-space:nowrap}.adoption-fast-banner{padding:20px 16px;background:#e6f5f5;color:#30415a;font-family:DM Sans,sans-serif}.adoption-fast-banner-inner{display:grid;max-width:1280px;margin:0 auto;grid-template-columns:1fr auto;grid-template-rows:auto;align-items:center;gap:12px 16px}.adoption-fast-banner-title{position:relative;top:-1px;margin:0;grid-column:1;grid-row:1;font-size:16px;font-weight:400;line-height:normal}.adoption-fast-help{display:inline-flex;width:fit-content;height:32px;padding:0 16px;grid-column:1;grid-row:2;align-items:center;gap:8px;border:1px solid #30415a;border-radius:9999px;background:#fff;color:#30415a;font-size:14px;font-weight:500;line-height:1;text-decoration:none}.adoption-fast-banner-close{width:28px;height:28px;margin:0;padding:4px;grid-column:2;grid-row:1/span 2;border:0;background:transparent;color:#5d6673;cursor:pointer}.adoption-fast-mobile-menu{position:fixed;z-index:1100;inset:0;min-height:100dvh;overflow-y:auto;background:#30415a;color:#fff}.adoption-fast-mobile-menu-header{display:flex;min-height:65px;padding:0 20px;align-items:center;justify-content:space-between;border-bottom:1px solid hsla(0,0%,100%,.55)}.adoption-fast-mobile-menu-brand{display:inline-flex;align-items:center;gap:8px}.adoption-fast-mobile-menu-close,.adoption-fast-mobile-search{display:inline-flex;width:40px;height:40px;margin:0;padding:0;align-items:center;justify-content:center;border:0;background:transparent;color:#fff;cursor:pointer}.adoption-fast-mobile-menu-logo{display:block;width:118px;height:23px;filter:brightness(0) invert(1)}.adoption-fast-mobile-menu-actions{display:inline-flex;align-items:center;gap:8px}.adoption-fast-mobile-menu-content{padding:28px 20px 40px}.adoption-fast-mobile-menu-link{display:flex;min-height:66px;padding:0 2px;align-items:center;justify-content:space-between;border-bottom:1px solid #69a9dc;color:#fff;font:600 28px/1.2 DM Sans,sans-serif;text-decoration:none}.adoption-fast-mobile-menu-link[href="/about-us"]{border-bottom:0}.adoption-fast-mobile-menu-chevron{font-size:24px;font-weight:400}.adoption-fast-mobile-report{display:flex;width:100%;min-height:48px;margin-top:40px;padding:0 20px;align-items:center;justify-content:center;border-radius:9999px;background:#d6e5ff;color:#30415a;font:500 16px/1 DM Sans,sans-serif;text-align:center;text-decoration:none}.adoption-fast-search-overlay{position:fixed;z-index:1000;inset:0;background:hsla(0,0%,100%,.8)}.adoption-fast-search-dialog{display:flex;width:100%;max-width:630px;margin:0 auto;padding:24px 20px;align-items:center;gap:16px;border:1px solid #e4e4eb;background:#fff;box-shadow:0 12px 28px rgba(0,0,0,.14)}.adoption-fast-search-form{position:relative;width:100%;margin:0}.adoption-fast-search-input{width:100%;height:48px;padding:0 52px 0 16px;border:2px solid #c8cbd0;border-radius:9999px;color:#30415a;font:400 16px/1 DM Sans,sans-serif}[hidden]{display:none!important}.adoption-fast-main{min-height:960px;padding:32px 16px 48px;background:#f4f4ed}.adoption-fast-container{width:100%;max-width:1280px;margin:0 auto;padding:0}.adoption-fast-main>.adoption-fast-container{padding-right:0!important;padding-left:0!important}.adoption-fast-hero{aspect-ratio:4/3;width:100%;overflow:hidden;border-radius:8px;background:#e5e7eb}.adoption-fast-hero img{width:100%;height:100%;object-fit:cover}.adoption-fast-info{height:360px;margin-top:32px;border:1px solid #e4e4eb;border-radius:16px;background:#fff}.adoption-search-controls{min-height:257px;padding:16px 24px;background:#324b6c}.adoption-search-loading-form{display:grid;width:100%;max-width:1280px;margin:0 auto;gap:16px}.adoption-search-loading-label{display:block;width:116px;height:14px;border-radius:4px;background:hsla(0,0%,100%,.72)}.adoption-search-loading-fields{display:grid;gap:12px;grid-template-columns:1fr 1fr}.adoption-search-loading-field{display:flex;min-width:0;flex-direction:column;gap:7px}.adoption-search-loading-control{width:100%;height:48px;border:1px solid #d9dbe0;border-radius:8px;background:hsla(0,0%,100%,.94)}.adoption-search-loading-button{height:48px;border:0;border-radius:9999px;background:#ffa63b}.adoption-search-results{min-height:900px;padding:31px 0 48px;background:#f4f4ed}.adoption-search-results-layout{width:100%;max-width:1280px;margin:0 auto}.adoption-search-filters-root{display:none}.adoption-search-results-main{min-width:0;flex:1}.adoption-search-heading-row{display:block;max-width:1280px;margin:0 8px 32px;color:#30415a;font-family:DM Sans,sans-serif}.adoption-search-heading{margin:0}.adoption-search-sort-row{display:flex;height:40px;margin-top:8px;align-items:center;justify-content:space-between;font-size:14px;line-height:20px}.adoption-search-filter-placeholder{display:inline-flex;width:62px;align-items:center;gap:8px;color:#066f65;font-size:16px;line-height:16px}.adoption-search-filter-placeholder:before{width:12px;height:10px;background:linear-gradient(#066f65 0 0) 0 0 /12px 1px no-repeat,linear-gradient(#066f65 0 0) 2px 4px /8px 1px no-repeat,linear-gradient(#066f65 0 0) 4px 8px /4px 1px no-repeat;content:""}.adoption-search-grid{display:grid;max-width:1280px;margin:0 16px;gap:16px}.adoption-search-grid-portal{display:contents}.adoption-search-card{display:block;position:relative;min-height:441px;margin-bottom:16px;overflow:hidden;border:1px solid #e4e4eb;border-radius:8px;background:#fff;color:#30415a;text-decoration:none;box-shadow:0 1px 2px rgba(0,0,0,.08)}.adoption-search-card-link{display:block;color:inherit;text-decoration:none}.adoption-search-favorite{position:absolute;z-index:2;top:16px;right:16px}.adoption-search-favorite-placeholder{display:inline-flex;width:40px;height:40px;align-items:center;justify-content:center;border:0;border-radius:9999px;background:#eff6ff;color:#30415a}.adoption-search-card img{display:block;width:100%;height:260px;border-radius:8px;object-fit:cover}.adoption-search-card-copy{padding:24px 20px 32px;color:#000;font-family:DM Sans,sans-serif}.adoption-search-card-copy h3{margin:0 0 8px;overflow:hidden;font-family:DM Sans,sans-serif;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.adoption-search-card-copy p{margin:0 0 12px;font-size:16px;line-height:1.5}#adoption-search-pet-details{color:#5d6673}@media (min-width:768px){.adoption-fast-logo{width:140px;height:27px}.adoption-fast-main{min-height:720px;padding-top:48px}.adoption-fast-hero{aspect-ratio:16/7}.adoption-fast-banner-inner{grid-template-columns:1fr auto auto}.adoption-fast-banner-title{grid-column:1;grid-row:1}.adoption-fast-help{grid-column:2;grid-row:1}.adoption-fast-banner-close{grid-column:3;grid-row:1}.adoption-search-loading-form{grid-template-columns:1fr auto}.adoption-search-loading-fields{grid-template-columns:repeat(3,minmax(0,1fr))}.adoption-search-loading-button{width:140px;align-self:end}.adoption-search-grid{margin:0 auto;grid-template-columns:repeat(3,minmax(0,1fr))}}@media (min-width:1280px){.adoption-search-results-layout{display:flex}.adoption-search-filters-root{display:block;width:250px;flex:0 0 250px}.adoption-fast-menu-button{display:none}.adoption-fast-nav{min-height:80px;margin-bottom:1px;padding:0;gap:0}.adoption-fast-logo{height:26px}.adoption-fast-nav-group{width:304px;flex:0 0 304px}.adoption-fast-nav-group>a{display:flex;width:160px;flex:0 0 160px}.adoption-fast-desktop-nav{display:flex;flex:1;align-items:center;justify-content:center;gap:12px}.adoption-fast-desktop-nav a{display:inline-flex;padding:6px 10px;align-items:center;gap:8px;border:2px solid transparent;border-radius:8px;color:#30415a;font:600 16px/24px ui-sans-serif,system-ui,sans-serif;text-decoration:none}.adoption-fast-desktop-nav a:not([href="/about-us"]){min-height:41px}.adoption-fast-desktop-nav a[href="/about-us"]{min-height:38px;border:0}.adoption-fast-desktop-nav-chevron{position:relative;width:12px;height:12px;font-size:0}.adoption-fast-desktop-nav-chevron:after{position:absolute;top:1px;left:2px;width:6px;height:6px;border-right:1.5px solid #579da2;border-bottom:1.5px solid #579da2;content:"";transform:rotate(45deg)}.adoption-fast-nav-actions{margin-left:32px;gap:16px}.adoption-fast-banner-inner{gap:16px}.adoption-fast-help{min-width:277px}#adoption-fast-search-button svg{width:24px;height:24px}.adoption-fast-report-link{display:inline-flex;height:40px;padding:0 16px;align-items:center;justify-content:center;border:1px solid #30415a;border-radius:9999px;background:#fff;color:#30415a;font:500 16px/16px ui-sans-serif,system-ui,sans-serif;text-decoration:none;white-space:nowrap}.adoption-fast-sign-in{padding:0 16px;font-family:ui-sans-serif,system-ui,sans-serif}}@keyframes shimmer{0%{background-position:200% 0}to{background-position:-200% 0}}</style>
+      <div id="adoption-shell">
+        <header class="adoption-fast-header">
+          <nav class="adoption-fast-nav" aria-label="Main navigation">
+            <div class="adoption-fast-nav-group">
+              <button
+                id="adoption-fast-menu-button"
+                class="adoption-fast-icon-button adoption-fast-menu-button"
+                type="button"
+                aria-label="Open side bar navigation"
+                aria-controls="adoption-fast-mobile-menu"
+                aria-expanded="false"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+              </button>
+              <a href="/" aria-label="Navigate to homepage">
+                <img
+                  class="adoption-fast-logo"
+                  src="/images/petplace-logo.svg"
+                  alt="PetPlace"
+                  width="140"
+                  height="27"
+                >
+              </a>
+            </div>
+            <div class="adoption-fast-desktop-nav" aria-label="Primary navigation">
+              <a href="/pet-adoption">Adopt <span class="adoption-fast-desktop-nav-chevron" aria-hidden="true"></span></a>
+              <a href="/pet-protection">Protect <span class="adoption-fast-desktop-nav-chevron" aria-hidden="true"></span></a>
+              <a href="/care">Care <span class="adoption-fast-desktop-nav-chevron" aria-hidden="true"></span></a>
+              <a href="/about-us">About</a>
+            </div>
+            <div class="adoption-fast-nav-actions">
+              <button
+                id="adoption-fast-search-button"
+                class="adoption-fast-icon-button"
+                type="button"
+                aria-label="Open search"
+                aria-controls="adoption-fast-search-overlay"
+                aria-expanded="false"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <path d="m20 20-4-4"></path>
+                </svg>
+              </button>
+              <a class="adoption-fast-report-link" href="/report-lost-or-found-pet">Report a lost or found pet</a>
+              <a class="adoption-fast-sign-in" href="/sign-in">Sign in</a>
+            </div>
+          </nav>
+          <div id="adoption-fast-mobile-menu" class="adoption-fast-mobile-menu" hidden>
+            <div class="adoption-fast-mobile-menu-header">
+              <div class="adoption-fast-mobile-menu-brand">
+                <button id="adoption-fast-mobile-menu-close" class="adoption-fast-mobile-menu-close" type="button" aria-label="Close side bar navigation">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M6 6l12 12M18 6 6 18"></path>
+                  </svg>
+                </button>
+                <a href="/" aria-label="Navigate to homepage">
+                  <img class="adoption-fast-mobile-menu-logo" src="/images/petplace-logo.svg" alt="PetPlace" width="118" height="23">
+                </a>
+              </div>
+              <div class="adoption-fast-mobile-menu-actions">
+                <button id="adoption-fast-mobile-search" class="adoption-fast-mobile-search" type="button" aria-label="Open search">
+                  <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="m20 20-4-4"></path>
+                  </svg>
+                </button>
+                <a class="adoption-fast-sign-in" href="/sign-in">Sign in</a>
+              </div>
+            </div>
+            <nav class="adoption-fast-mobile-menu-content" aria-label="Mobile navigation">
+              <a class="adoption-fast-mobile-menu-link" href="/pet-adoption"><span>Adopt</span><span class="adoption-fast-mobile-menu-chevron" aria-hidden="true">&#8250;</span></a>
+              <a class="adoption-fast-mobile-menu-link" href="/pet-protection"><span>Protect</span><span class="adoption-fast-mobile-menu-chevron" aria-hidden="true">&#8250;</span></a>
+              <a class="adoption-fast-mobile-menu-link" href="/care"><span>Care</span><span class="adoption-fast-mobile-menu-chevron" aria-hidden="true">&#8250;</span></a>
+              <a class="adoption-fast-mobile-menu-link" href="/about-us"><span>About</span></a>
+              <a class="adoption-fast-mobile-report" href="/report-lost-or-found-pet">Report a lost or found pet</a>
+            </nav>
+          </div>
+          <div id="adoption-fast-banner" class="adoption-fast-banner">
+            <div class="adoption-fast-banner-inner">
+              <p class="adoption-fast-banner-title">The 24Petwatch microchip registry is now on PetPlace!</p>
+              <a class="adoption-fast-help" href="tel:18337387523">
+                <span>Need Help? Call 1-833-738-7523.</span>
+                <span aria-hidden="true">&#8594;</span>
+              </a>
+              <button id="adoption-fast-banner-close" class="adoption-fast-banner-close" type="button" aria-label="Close banner">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                  <path d="M6 6l12 12M18 6 6 18"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </header>
+        <div id="adoption-fast-search-overlay" class="adoption-fast-search-overlay" role="dialog" aria-modal="true" aria-label="Search" hidden>
+          <div class="adoption-fast-search-dialog">
+            <form class="adoption-fast-search-form" role="search" action="/search" method="get">
+              <input class="adoption-fast-search-input" aria-label="Search PetPlace" name="query" type="search" placeholder="Search PetPlace">
+              <button class="adoption-fast-icon-button" style="position:absolute;right:4px;top:4px" type="submit" aria-label="Submit search">
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <path d="m20 20-4-4"></path>
+                </svg>
+              </button>
+            </form>
+            <button id="adoption-fast-search-close" class="adoption-fast-icon-button" type="button" aria-label="Close search">
+              <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M6 6l12 12M18 6 6 18"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <main class="adoption-detail-only">
+          <section class="adoption-fast-main">
+            <div class="adoption-fast-container">
+              <div id="adoption-hero-root" class="adoption-fast-hero">
+                <img
+                  id="adoption-hero-image"
+                  src="/images/adoption-paw-placeholder.webp"
+                  alt="Pet available for adoption"
+                  width="800"
+                  height="600"
+                  loading="eager"
+                  decoding="async"
+                  fetchpriority="high"
+                >
+              </div>
+              <div id="adoption-content-root">
+                <div class="adoption-fast-info"></div>
+              </div>
+            </div>
+          </section>
+        </main>
+        <div id="adoption-below-fold-root" class="adoption-detail-only"></div>
+        <div id="adoption-search-content-root" class="adoption-search-only">
+          <main>
+          <section class="adoption-search-controls">
+            <div id="adoption-search-controls-root">
+              <div class="adoption-search-loading-form" role="status" aria-label="Loading pet search controls" data-adoption-search-parser-loading>
+                <div class="adoption-search-loading-fields" aria-hidden="true">
+                  <div class="adoption-search-loading-field"><span class="adoption-search-loading-label"></span><span class="adoption-search-loading-control"></span></div>
+                  <div class="adoption-search-loading-field"><span class="adoption-search-loading-label"></span><span class="adoption-search-loading-control"></span></div>
+                  <div class="adoption-search-loading-field"><span class="adoption-search-loading-label"></span><span class="adoption-search-loading-control"></span></div>
+                </div>
+                <span class="adoption-search-loading-button" aria-hidden="true"></span>
+              </div>
+            </div>
+          </section>
+          <section class="adoption-search-results">
+            <div class="adoption-search-results-layout">
+              <div id="adoption-search-filters-root" class="adoption-search-filters-root"></div>
+              <div class="adoption-search-results-main">
+                <div id="adoption-search-heading-root">
+                  <div class="adoption-search-heading-row" data-adoption-search-parser-loading>
+                    <h1 id="adoption-search-heading" class="adoption-search-heading heading-xs title-serif text-brand-secondary-800">Dogs for adoption near 90210</h1>
+                    <div class="adoption-search-sort-row"><span class="adoption-search-filter-placeholder">Filter</span><span>Sorted by: Nearest</span></div>
+                  </div>
+                </div>
+                <div class="adoption-search-grid">
+                  <section id="adoption-search-first-card" class="adoption-search-card">
+                    <div id="adoption-search-favorite-root" class="adoption-search-favorite">
+                      <span class="adoption-search-favorite-placeholder" data-adoption-search-parser-loading aria-hidden="true">&#9825;</span>
+                    </div>
+                    <a id="adoption-search-first-card-link" class="adoption-search-card-link" href="/pet-adoption/search">
+                      <img id="adoption-search-lcp-image" src="/images/adoption-search-dog-placeholder.webp" alt="Pet available for adoption" width="828" height="828" loading="eager" decoding="async" fetchpriority="high">
+                      <div class="adoption-search-card-copy">
+                        <h3 id="adoption-search-pet-name" class="heading-xs">Pet available for adoption</h3>
+                        <p id="adoption-search-pet-details"></p>
+                        <p id="adoption-search-pet-location"></p>
+                      </div>
+                    </a>
+                  </section>
+                  <div id="adoption-search-grid-root" class="adoption-search-grid-portal"></div>
+                </div>
+                <div id="adoption-search-pagination-root"></div>
+              </div>
+            </div>
+          </section>
+          </main>
+          <div id="adoption-search-dialogs-root"></div>
+        </div>
+        <div id="adoption-search-react-root" class="adoption-search-only"></div>
+      </div>
+      <div id="default-shell">
+      <div class="skeleton-header">
+        <div class="skeleton-logo"></div>
+      </div>
+      <div class="skeleton-hero">
+        <div class="skeleton-content">
+          <p style="margin: 0 0 8px; color: #6b7280; font: 500 14px/1.4 system-ui, -apple-system, sans-serif;">
+            Loading PetPlace
+          </p>
+          <div class="skeleton-title"></div>
+          <div class="skeleton-text"></div>
+        </div>
+      </div>
+      <div class="skeleton-info"></div>
+      </div>
+    </div>
+    <script>
+      (() => {
+        if (!document.documentElement.classList.contains("adoption-detail") &&
+            !document.documentElement.classList.contains("adoption-search")) return;
+
+        const menuButton = document.getElementById("adoption-fast-menu-button");
+        const menu = document.getElementById("adoption-fast-mobile-menu");
+        const menuClose = document.getElementById("adoption-fast-mobile-menu-close");
+        const mobileSearchButton = document.getElementById("adoption-fast-mobile-search");
+        const searchButton = document.getElementById("adoption-fast-search-button");
+        const searchOverlay = document.getElementById("adoption-fast-search-overlay");
+        const searchClose = document.getElementById("adoption-fast-search-close");
+        const banner = document.getElementById("adoption-fast-banner");
+        const bannerClose = document.getElementById("adoption-fast-banner-close");
+        const heroImage = document.getElementById("adoption-hero-image");
+
+        if (document.documentElement.classList.contains("adoption-search")) {
+          const params = new URLSearchParams(window.location.search);
+          const animalType = params.get("filterAnimalType") || "Any";
+          const zipPostal = params.get("zipPostal") || "";
+          const heading = document.getElementById("adoption-search-heading");
+
+          if (heading) {
+            heading.textContent = `${animalType === "Any" ? "Any animal" : animalType}s for adoption near ${zipPostal}`;
+          }
+        }
+
+        const announceHeroReady = () => {
+          if (window.__petplaceAdoptionLcpReady) return;
+          window.requestAnimationFrame(() => {
+            window.__petplaceAdoptionLcpReady = true;
+            window.dispatchEvent(new Event("petplace:adoption-lcp-ready"));
+          });
+        };
+
+        if (heroImage instanceof HTMLImageElement && heroImage.complete) {
+          announceHeroReady();
+        } else {
+          heroImage?.addEventListener("load", announceHeroReady, { once: true });
+        }
+
+        const setMenuOpen = (isOpen) => {
+          if (!menu) return;
+          menu.hidden = !isOpen;
+          menuButton?.setAttribute("aria-expanded", String(isOpen));
+          document.body.style.overflow = isOpen ? "hidden" : "";
+          if (isOpen) menuClose?.focus();
+          else menuButton?.focus();
+        };
+
+        menuButton?.addEventListener("click", () => setMenuOpen(true));
+        menuClose?.addEventListener("click", () => setMenuOpen(false));
+
+        const setSearchOpen = (isOpen) => {
+          if (!searchOverlay) return;
+          searchOverlay.hidden = !isOpen;
+          searchButton?.setAttribute("aria-expanded", String(isOpen));
+          if (isOpen) searchOverlay.querySelector("input")?.focus();
+        };
+
+        searchButton?.addEventListener("click", () => setSearchOpen(true));
+        mobileSearchButton?.addEventListener("click", () => {
+          setMenuOpen(false);
+          setSearchOpen(true);
+        });
+        searchClose?.addEventListener("click", () => setSearchOpen(false));
+        searchOverlay?.addEventListener("click", (event) => {
+          if (event.target === searchOverlay) setSearchOpen(false);
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key !== "Escape") return;
+          if (menu && !menu.hidden) setMenuOpen(false);
+          else setSearchOpen(false);
+        });
+
+        if (sessionStorage.getItem("hidePromoManually") === "true") {
+          if (banner) banner.hidden = true;
+        }
+        bannerClose?.addEventListener("click", () => {
+          sessionStorage.setItem("hidePromoManually", "true");
+          if (banner) banner.hidden = true;
+        });
+      })();
+    </script>
+    <script>
+      let applicationStarted = false;
+      const loadApplicationStyles = () => {
+        const isViteDevelopment = Array.from(document.scripts).some((script) =>
+          script.src.includes("/@vite/client")
+        );
+        if (isViteDevelopment) return Promise.resolve();
+
+        const existing = document.querySelector("link[data-petplace-application-styles]");
+        if (existing instanceof HTMLLinkElement) {
+          existing.rel = "stylesheet";
+          existing.removeAttribute("as");
+
+          if (existing.dataset.loaded === "true" || existing.sheet) {
+            return Promise.resolve();
+          }
+
+          return new Promise((resolve, reject) => {
+            existing.addEventListener("load", () => {
+              window.requestAnimationFrame(resolve);
+            }, { once: true });
+            existing.addEventListener("error", reject, { once: true });
+          });
+        }
+
+        return new Promise((resolve, reject) => {
+          const stylesheet = document.createElement("link");
+          stylesheet.rel = "stylesheet";
+          stylesheet.href = "/assets/react-main.css";
+          stylesheet.dataset.petplaceApplicationStyles = "true";
+          stylesheet.addEventListener("load", resolve, { once: true });
+          stylesheet.addEventListener("error", reject, { once: true });
+          document.head.appendChild(stylesheet);
+        });
+      };
+
+      const startApplication = async () => {
+        if (applicationStarted) return;
+        applicationStarted = true;
+        await loadApplicationStyles();
+        const isViteDevelopment = Array.from(document.scripts).some((script) =>
+          script.src.includes("/@vite/client")
+        );
+        const applicationModule = isViteDevelopment
+          ? "/src/main.tsx"
+          : "/assets/react-main.min.js";
+        await import(applicationModule);
+      };
+
+      if (document.documentElement.classList.contains("adoption-detail")) {
+        if (window.__petplaceAdoptionLcpReady) {
+          void startApplication();
+        } else {
+          window.addEventListener("petplace:adoption-lcp-ready", () => {
+            void startApplication();
+          }, { once: true });
+        }
+      } else if (document.documentElement.classList.contains("adoption-search")) {
+        if (window.__petplaceAdoptionSearchLcpReady) {
+          void startApplication();
+        } else {
+          window.addEventListener("petplace:adoption-search-lcp-ready", () => {
+            void startApplication();
+          }, { once: true });
+          window.setTimeout(() => {
+            void startApplication();
+          }, 5000);
+        }
+      } else {
+        void startApplication();
+      }
+    </script>
+  </body>
+</html>
