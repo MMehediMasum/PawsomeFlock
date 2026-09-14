@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0" />
+    <meta name="google-site-verification" content="FAixaeWJw0tv3Lfq8rwkkw_a6cFyTrCBWWKpQv0EEew" />
+    <meta name="theme-color" content="#1e3a5f" />
+    <!-- Favicon for all browsers (with cache-busting) -->
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=2" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2" />
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
+    
+    <!-- Android Chrome -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png?v=2" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png?v=2" />
+    <title>Cause For Paws - Dog Training \u0026 Behaviour Modification</title>
+    <link rel="dns-prefetch" href="https://maps.googleapis.com" />
+    
+    <!-- Preload critical hero images for LCP optimization -->
+    <link rel="preload" as="image" href="/slider-5.webp" type="image/webp" fetchpriority="high" media="(min-width: 769px)" />
+    
+    <!-- LocalBusiness Schema for Google Search Results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "Cause For Paws",
+      "image": "https://causeforpaws.com.au",
+      "url": "https://causeforpaws.com.au",
+      "telephone": "0447376764",
+      "priceRange": "$$",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Cooma",
+        "addressRegion": "NSW",
+        "addressCountry": "AU"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": "78"
+      }
+    }
+    </script>
+    
+    <!-- Fallback fonts to prevent layout shift -->
+    <style>
+      @font-face {
+        font-family: 'Inter';
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Open Sans';
+        font-display: swap;
+      }
+      /* Minimal critical CSS to prevent FOUC */
+      html {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #ffffff;
+      }
+      #root {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-B-XAVAuT.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CZR6rkMx.css">
+  </head>
+
+  <body>
+    <!-- Meta Pixel noscript (must be in body, not head) -->
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1695465151599765&ev=PageView&noscript=1"
+    /></noscript>
+    <div id="root"></div>
+    
+    <!-- Non-critical analytics: load on first engagement or after the critical rendering window -->
+    <script>
+      (function() {
+        var loaded = false;
+        var events = ['pointerdown', 'touchstart', 'keydown', 'scroll'];
+
+        function loadDeferredAnalytics() {
+          if (loaded) return;
+          loaded = true;
+          events.forEach(function(eventName) {
+            window.removeEventListener(eventName, loadDeferredAnalytics);
+          });
+
+          (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src='https://www.clarity.ms/tag/'+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+          })(window, document, 'clarity', 'script', 'wgvqhcjho3');
+
+          var umami = document.createElement('script');
+          umami.async = true;
+          umami.src = 'https://manus-analytics.com/umami';
+          umami.dataset.websiteId = '700c3038-6de2-4fd6-8371-ee27cf65e8ea';
+          document.head.appendChild(umami);
+        }
+
+        events.forEach(function(eventName) {
+          window.addEventListener(eventName, loadDeferredAnalytics, { once: true, passive: true });
+        });
+        window.addEventListener('load', function() {
+          setTimeout(loadDeferredAnalytics, 12000);
+        });
+      })();
+    </script>
+  </body>
+
+</html>
