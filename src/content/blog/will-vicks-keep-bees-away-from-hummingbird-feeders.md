@@ -27,7 +27,7 @@ Hummingbird feeders contain sugar water that mimics flower nectar. Bees are natu
 
 Bees search for food by following scents and colors. Bright red feeders often catch their attention. Once a bee finds a feeder, it may gather nectar and share the location with others. Bees can be persistent and return often. They may also guard the feeder from other insects. Understanding these behaviors can help reduce bee visits to hummingbird feeders.
 
-![Will Vicks Keep Bees Away from Hummingbird Feeders? Proven Tips!](/images/will-vicks-keep-bees-away-from-hummingbird-feeders/hummingbird-and-yellowjacket-royalty-free-image-1752782718.pjpeg)
+![Will Vicks Keep Bees Away from Hummingbird Feeders? Proven Tips!](/images/will-vicks-keep-bees-away-from-hummingbird-feeders/hummingbird-and-yellowjacket-royalty-free-image-1752782718.jpeg)
 
 
 
