@@ -78,7 +78,7 @@ Bees prefer sunny, warm places to gather nectar. Hanging your feeder in partial 
 * Choose a spot with open space so hummingbirds can approach easily.
 * Avoid locations near trash bins or compost piles that attract bees.
 
-![How to Get Bees Away from Hummingbird Feeders: Proven Tips](/images/how-to-get-bees-away-from-hummingbird-feeders/hummingbird-and-yellowjacket-royalty-free-image-1752782718.pjpeg)
+![How to Get Bees Away from Hummingbird Feeders: Proven Tips](/images/how-to-get-bees-away-from-hummingbird-feeders/hummingbird-and-yellowjacket-royalty-free-image-1752782718.jpeg)
 
 
 

@@ -160,7 +160,7 @@ Providing a dedicated feeder just for bees can be surprisingly effective. Use a 
 
 This keeps bees busy and less interested in the hummingbird feeders. Remember to clean and refill the bee feeder regularly to prevent mold and fermentation. Have you considered giving bees their own nectar spot to keep your hummingbirds happy?
 
-![How to Get Rid of Bees on Hummingbird Feeder: Simple Effective Tips](/images/how-to-get-rid-of-bees-on-hummingbird-feeder/hummingbird-and-yellowjacket-royalty-free-image-1752782718.pjpeg)
+![How to Get Rid of Bees on Hummingbird Feeder: Simple Effective Tips](/images/how-to-get-rid-of-bees-on-hummingbird-feeder/hummingbird-and-yellowjacket-royalty-free-image-1752782718.jpeg)
 
 
 

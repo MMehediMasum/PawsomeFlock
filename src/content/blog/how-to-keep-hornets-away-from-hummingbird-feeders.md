@@ -35,7 +35,7 @@ Another mistake is placing feeders near flowering plants that attract hornets. I
 
 Using feeders with wide feeding ports or no protective cages also makes it easy for hornets to access nectar. Opt for feeders designed with smaller holes or built-in bee guards to keep hornets out without blocking hummingbirds.
 
-![How to Keep Hornets Away from Hummingbird Feeders: Easy Tips](/images/how-to-keep-hornets-away-from-hummingbird-feeders/hummingbird-and-yellowjacket-royalty-free-image-1752782718.pjpeg)
+![How to Keep Hornets Away from Hummingbird Feeders: Easy Tips](/images/how-to-keep-hornets-away-from-hummingbird-feeders/hummingbird-and-yellowjacket-royalty-free-image-1752782718.jpeg)
 
 
 

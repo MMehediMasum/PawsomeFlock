@@ -31,7 +31,7 @@ Where you place your feeder can make a big difference in yellow jacket activity.
 
 Think about your garden layout. Is your feeder in a shaded, quiet spot, or somewhere busy and exposed? Yellow jackets prefer sunny, open spaces, so hanging your feeder in a less accessible or shaded area might reduce their presence. Have you tried moving your feeder to see if the yellow jackets follow?
 
-![How to Keep Yellow Jackets Away from Hummingbird Feeder: Simple Tips](/images/how-to-keep-yellow-jackets-away-from-hummingbird-feeder/hummingbird-and-yellowjacket-royalty-free-image-1752782718.pjpeg)
+![How to Keep Yellow Jackets Away from Hummingbird Feeder: Simple Tips](/images/how-to-keep-yellow-jackets-away-from-hummingbird-feeder/hummingbird-and-yellowjacket-royalty-free-image-1752782718.jpeg)
 
 
 

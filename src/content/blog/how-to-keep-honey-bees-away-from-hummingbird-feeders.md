@@ -33,7 +33,7 @@ Placing feeders away from flowering plants or bee hives also helps reduce visits
 
 Consider feeders with bee guards—small plastic barriers that block bee entry but still allow hummingbirds to feed. Combining this with careful placement reduces unwanted visitors and keeps your hummingbird guests happy.
 
-![How to Keep Honey Bees Away from Hummingbird Feeders: Effective Tips](/images/how-to-keep-honey-bees-away-from-hummingbird-feeders/hummingbird-and-yellowjacket-royalty-free-image-1752782718.pjpeg)
+![How to Keep Honey Bees Away from Hummingbird Feeders: Effective Tips](/images/how-to-keep-honey-bees-away-from-hummingbird-feeders/hummingbird-and-yellowjacket-royalty-free-image-1752782718.jpeg)
 
 
 

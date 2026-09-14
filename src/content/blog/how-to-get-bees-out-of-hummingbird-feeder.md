@@ -143,7 +143,7 @@ You can also use simple tactics to lure bees away from the feeder area. Placing 
 
 Keep these bee attractants in shady areas to make them less appealing to hummingbirds. This method offers a clever distraction without harming the bees or disrupting your hummingbird feeding routine. What creative spots around your yard could serve as a bee-friendly snack bar?
 
-![How to Get Bees Out of Hummingbird Feeder: Easy & Effective Tips](/images/how-to-get-bees-out-of-hummingbird-feeder/hummingbird-and-yellowjacket-royalty-free-image-1752782718.pjpeg)
+![How to Get Bees Out of Hummingbird Feeder: Easy & Effective Tips](/images/how-to-get-bees-out-of-hummingbird-feeder/hummingbird-and-yellowjacket-royalty-free-image-1752782718.jpeg)
 
 
 

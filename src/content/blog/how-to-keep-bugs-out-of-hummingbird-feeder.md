@@ -151,7 +151,7 @@ Clear away spilled nectar and fallen fruit near the feeder. These sweet residues
 
 Trim bushes and trees close to the feeder to improve airflow. Dense plants give bugs a hiding place near nectar sources. Keep grass short and remove weeds around the feeder. Plant flowers that do not attract ants or wasps nearby. Use natural pest-repelling plants like mint or basil. A tidy garden around the feeder helps keep bugs at bay.
 
-![How to Keep Bugs Out of Hummingbird Feeder: Easy Effective Tips](/images/how-to-keep-bugs-out-of-hummingbird-feeder/hummingbird-and-yellowjacket-royalty-free-image-1752782718.pjpeg)
+![How to Keep Bugs Out of Hummingbird Feeder: Easy Effective Tips](/images/how-to-keep-bugs-out-of-hummingbird-feeder/hummingbird-and-yellowjacket-royalty-free-image-1752782718.jpeg)
 
 
 ![How to Keep Bugs Out of Hummingbird Feeder: Easy Effective Tips](/images/how-to-keep-bugs-out-of-hummingbird-feeder/female-ruby-throated-hummingbird-at-feeder-royalty-free-imag.jpg)
